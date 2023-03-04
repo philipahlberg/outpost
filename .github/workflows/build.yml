@@ -1,0 +1,100 @@
+name: build
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        target:
+          # Linux
+          - aarch64-unknown-linux-gnu
+          - x86_64-unknown-linux-gnu
+
+          # macOS
+          - aarch64-apple-darwin
+          - x86_64-apple-darwin
+
+        include:
+          # Linux
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-22.04
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-22.04
+
+          # macOS
+          - target: aarch64-apple-darwin
+            runner: macos-12
+          - target: x86_64-apple-darwin
+            runner: macos-12
+
+    runs-on: ${{ matrix.runner }}
+    steps:
+    - name: Fetch repository
+      uses: actions/checkout@v3
+
+    - name: Check cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ env.HOME }}/.cargo/registry/index/
+          ${{ env.HOME }}/.cargo/registry/cache/
+          ${{ env.HOME }}/.cargo/git/db/
+          target/
+        key: Cargo-Build-${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          Cargo-Build-${{ runner.os }}-${{ matrix.target }}
+          Cargo-Build-${{ runner.os }}
+
+    - name: Check toolchain
+      run: rustup --version && cargo --version
+
+    - name: Add target
+      run: rustup target add ${{ matrix.target }}
+
+    - name: Setup (macOS/aarch64)
+      if: matrix.target == 'aarch64-apple-darwin'
+      shell: bash
+      run: |
+        # Sometimes fails on the first attempt
+        xcrun -sdk macosx --show-sdk-path > /dev/null
+        xcrun -sdk macosx --show-sdk-platform-version > /dev/null
+
+        SDKROOT="$(xcrun -sdk macosx --show-sdk-path)"
+        MACOSX_DEPLOYMENT_TARGET="$(xcrun -sdk macosx --show-sdk-platform-version)"
+
+        echo SDKROOT="$SDKROOT" >> $GITHUB_ENV
+        echo MACOSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET" >> $GITHUB_ENV
+
+    - name: Setup (Linux/aarch64)
+      if: matrix.target == aarch64-unknown-linux-gnu
+      shell: bash
+      run: |
+        apt-get update
+        apt-get install -y --no-install-suggests --no-install-recommends clang-15 llvm-15
+
+    - name: Build
+      shell: bash
+      run: |
+        cargo build -p outpost-cli --target ${{ matrix.target }} --release
+        cargo build -p outpost-worker --target ${{ matrix.target }} --release
+        mkdir outpost-${{ matrix.target }}-${{ inputs.version }}
+        cp target/${{ matrix.target }}/release/outpost outpost-${{ matrix.target }}-${{ inputs.version }}
+        cp target/${{ matrix.target }}/release/outpost-worker outpost-${{ matrix.target }}-${{ inputs.version }}
+        tar czf outpost-${{ matrix.target }}-${{ inputs.version }}.tar.gz outpost-${{ matrix.target }}-${{ inputs.version }}
+
+    - name: Upload archive
+      uses: actions/upload-artifact@v3
+      with:
+        name: outpost-${{ matrix.target }}-${{ inputs.version }}.tar.gz
+        path: outpost-${{ matrix.target }}-${{ inputs.version }}.tar.gz
+        if-no-files-found: error

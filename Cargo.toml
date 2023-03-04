@@ -1,0 +1,14 @@
+[package]
+name = "outpost"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.1.8", features = ["derive"] }
+daemonize = "0.5.0"
+gix = { version = "0.38.0", features = ["blocking-network-client", "blocking-http-transport-reqwest", "blocking-http-transport-reqwest-rust-tls"] }
+reqwest = { version = "0.11.14", default-features = false, features = ["tokio-rustls", "default-tls", "json"] }
+sled = "0.34.7"
+tokio = { version = "1.26.0", features = ["full"] }
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
