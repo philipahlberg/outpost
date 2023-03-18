@@ -1,0 +1,3 @@
+stdout = "./stdout"
+stderr = "./stderr"
+on_update = "echo \"update found\""

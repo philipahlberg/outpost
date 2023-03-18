@@ -2,13 +2,26 @@
 name = "outpost"
 version = "0.1.0"
 edition = "2021"
+default-run = "outpost"
 
 [dependencies]
 clap = { version = "4.1.8", features = ["derive"] }
-daemonize = "0.5.0"
 gix = { version = "0.38.0", features = ["blocking-network-client", "blocking-http-transport-reqwest", "blocking-http-transport-reqwest-rust-tls"] }
 reqwest = { version = "0.11.14", default-features = false, features = ["tokio-rustls", "default-tls", "json"] }
 sled = "0.34.7"
 tokio = { version = "1.26.0", features = ["full"] }
 tracing = "0.1.37"
-tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.16", features = ["env-filter", "time", "json"] }
+home = "0.5.4"
+serde = { version = "1.0.152", features = ["derive"] }
+serde_json = "1.0.93"
+toml = "0.7.2"
+rand = "0.8.5"
+shlex = "1.1.0"
+time = "0.3.20"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+procfs = { version = "0.15.1", default-features = false }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+libproc = "0.13.0"
