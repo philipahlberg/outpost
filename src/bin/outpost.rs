@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
 
 use clap::Parser;
 use outpost::cli;
@@ -31,10 +31,17 @@ fn main() {
     match Command::parse() {
         Command::Start { config } => {
             let config = config.expect("must provide config");
-            let config = fs::read_to_string(config).expect("failed to read config");
-            let config: Config = toml::from_str(&config).expect("invalid toml");
-            let stdout = config.stdout.unwrap_or("/tmp/outpost.out".to_string());
-            let stderr = config.stderr.unwrap_or("/tmp/outpost.err".to_string());
+            let config = Config::from_path(&config).expect("failed to read config");
+            let stdout = config
+                .stdout
+                .unwrap_or(PathBuf::from("/tmp/outpost.out"))
+                .display()
+                .to_string();
+            let stderr = config
+                .stderr
+                .unwrap_or(PathBuf::from("/tmp/outpost.err"))
+                .display()
+                .to_string();
             cli::start(stdout, stderr, config.on_update).expect("`start` failed");
         }
         Command::Stop {} => {
