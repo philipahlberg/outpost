@@ -1,3 +1,1 @@
-pub fn stop() {
-
-}
+pub fn stop() {}
