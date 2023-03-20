@@ -1,5 +1,8 @@
 pub use crate::fetch_and_compare::{fetch_and_compare, FetchError, FetchResult};
-use crate::git::{GitError, Repository};
+use crate::{
+    config::Credentials,
+    git::{GitError, Repository},
+};
 use gix::ObjectId;
 use std::{
     io,
@@ -37,7 +40,12 @@ impl From<FetchError> for PollError {
     }
 }
 
-pub fn poll(program: String, arguments: Vec<String>, resume: bool) -> Result<(), PollError> {
+pub fn poll(
+    program: String,
+    arguments: Vec<String>,
+    resume: bool,
+    credentials: Option<Credentials>,
+) -> Result<(), PollError> {
     let repo = Repository::discover()?;
 
     let current_branch = repo.current_branch()?;
@@ -60,7 +68,14 @@ pub fn poll(program: String, arguments: Vec<String>, resume: bool) -> Result<(),
         let mut current_commit_id;
         for _ in 0..5 {
             current_commit_id = repo.current_commit_id()?;
-            match fetch_and_compare(&repo, &remote_branch, current_commit_id).await? {
+            match fetch_and_compare(
+                &repo,
+                &remote_branch,
+                current_commit_id,
+                credentials.as_ref(),
+            )
+            .await?
+            {
                 FetchResult::UpToDate { .. } => {
                     tracing::info!("Up to date.");
                 }

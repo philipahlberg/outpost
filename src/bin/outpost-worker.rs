@@ -1,5 +1,5 @@
 use clap::Parser;
-use outpost::worker;
+use outpost::{config::Credentials, worker};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 #[derive(Parser)]
@@ -36,8 +36,9 @@ fn main() {
                     return;
                 }
             };
+            let credentials = Credentials::from_env().expect("invalid credentials");
 
-            worker::poll(program, arguments, resume).expect("failed to run `poll`");
+            worker::poll(program, arguments, resume, credentials).expect("failed to run `poll`");
         }
     }
 

@@ -1,4 +1,7 @@
-use crate::git::{Branch, GitError, Repository};
+use crate::{
+    config::Credentials,
+    git::{Branch, GitError, Repository},
+};
 use gix::{protocol::handshake::Ref, ObjectId};
 
 #[derive(Debug)]
@@ -23,8 +26,9 @@ pub async fn fetch_and_compare(
     repository: &Repository,
     branch: &Branch,
     current_id: ObjectId,
+    credentials: Option<&Credentials>,
 ) -> Result<FetchResult, FetchError> {
-    let res = repository.fetch()?;
+    let res = repository.fetch(credentials)?;
 
     let full_ref_name_on_remote = branch.as_reference().local().full_name();
 

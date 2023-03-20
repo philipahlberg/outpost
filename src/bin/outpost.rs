@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use clap::Parser;
-use outpost::cli;
 use outpost::config::Config;
+use outpost::{cli, config::Credentials};
 use time::macros::format_description;
 use tracing_subscriber::{
     fmt::time::UtcTime, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
@@ -32,6 +32,7 @@ fn main() {
         Command::Start { config } => {
             let config = config.expect("must provide config");
             let config = Config::from_path(&config).expect("failed to read config");
+            let credentials = Credentials::from_env().expect("invalid credentials");
             let stdout = config
                 .stdout
                 .unwrap_or(PathBuf::from("/tmp/outpost.out"))
@@ -42,7 +43,7 @@ fn main() {
                 .unwrap_or(PathBuf::from("/tmp/outpost.err"))
                 .display()
                 .to_string();
-            cli::start(stdout, stderr, config.on_update).expect("`start` failed");
+            cli::start(stdout, stderr, config.on_update, credentials).expect("`start` failed");
         }
         Command::Stop {} => {
             cli::stop();

@@ -13,6 +13,12 @@ pub struct Config {
 }
 
 #[derive(Debug)]
+pub struct Credentials {
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Debug)]
 pub enum ConfigError {
     Io(io::Error),
     Toml(toml::de::Error),
@@ -77,5 +83,25 @@ fn relative_to(base: &Path, path: PathBuf) -> PathBuf {
         base
     } else {
         path
+    }
+}
+
+#[derive(Debug)]
+pub enum CredentialsError {
+    MissingUsername,
+    MissingPassword,
+}
+
+impl Credentials {
+    pub fn from_env() -> Result<Option<Self>, CredentialsError> {
+        match (
+            std::env::var("GIT_USERNAME").ok(),
+            std::env::var("GIT_PASSWORD").ok(),
+        ) {
+            (None, None) => Ok(None),
+            (None, Some(_)) => Err(CredentialsError::MissingUsername),
+            (Some(_), None) => Err(CredentialsError::MissingPassword),
+            (Some(username), Some(password)) => Ok(Some(Self { username, password })),
+        }
     }
 }

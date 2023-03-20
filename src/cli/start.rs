@@ -1,6 +1,9 @@
 use std::{fs::File, io, process::Command};
 
-use crate::database::{v1, Process, PROCESSES};
+use crate::{
+    config::Credentials,
+    database::{v1, Process, PROCESSES},
+};
 
 #[derive(Debug)]
 pub enum StartError {
@@ -19,7 +22,12 @@ const OUTPOST_WORKER: &str = "./target/debug/outpost-worker";
 #[cfg(not(debug_assertions))]
 const OUTPOST_WORKER: &str = "outpost-worker";
 
-pub fn start(stdout: String, stderr: String, on_update: String) -> Result<(), StartError> {
+pub fn start(
+    stdout: String,
+    stderr: String,
+    on_update: String,
+    credentials: Option<Credentials>,
+) -> Result<(), StartError> {
     let outpost_dir = home::home_dir()
         .ok_or(StartError::HomeDirectoryMissing)?
         .join(".outpost");
@@ -53,12 +61,19 @@ pub fn start(stdout: String, stderr: String, on_update: String) -> Result<(), St
         let stdout = File::create(&stdout).map_err(StartError::Stdout)?;
         let stderr = File::create(&stderr).map_err(StartError::Stderr)?;
 
-        Command::new(OUTPOST_WORKER)
+        let mut command = Command::new(OUTPOST_WORKER);
+
+        command
             .args(["poll", "--on-update", on_update.as_str()])
             .stdout(stdout)
-            .stderr(stderr)
-            .spawn()
-            .map_err(StartError::Spawn)?
+            .stderr(stderr);
+
+        if let Some(c) = credentials {
+            command.env("GIT_USERNAME", c.username);
+            command.env("GIT_PASSWORD", c.password);
+        }
+
+        command.spawn().map_err(StartError::Spawn)?
     };
 
     tracing::debug!("Worker process started (ID: {}).", worker.id());

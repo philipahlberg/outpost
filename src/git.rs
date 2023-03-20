@@ -1,14 +1,18 @@
 #![allow(clippy::result_large_err)]
 
 use gix::{
+    credentials::{helper::Action, protocol},
     discover, reference,
     remote::{
         connect,
         fetch::{self, prepare, Outcome},
         Direction,
     },
+    sec::identity::Account,
     Head, ObjectId, Remote,
 };
+
+use crate::config::Credentials;
 
 #[derive(Debug)]
 pub enum GitError {
@@ -117,10 +121,21 @@ impl Repository {
             .map_err(|_| GitError::RepositoryDefaultRemoteMissing)
     }
 
-    pub fn fetch(&self) -> Result<Outcome, GitError> {
+    pub fn fetch(&self, credentials: Option<&Credentials>) -> Result<Outcome, GitError> {
         self.remote()?
             .connect(Direction::Fetch, gix::progress::Discard)
             .map_err(GitError::FetchConnect)?
+            .with_credentials(|action| match action {
+                Action::Get(ctx) => Ok(credentials.map(|c| protocol::Outcome {
+                    identity: Account {
+                        username: c.username.clone(),
+                        password: c.password.clone(),
+                    },
+                    next: ctx.into(),
+                })),
+                Action::Store(_) => Ok(None),
+                Action::Erase(_) => Ok(None),
+            })
             .prepare_fetch(Default::default())
             .map_err(GitError::FetchHandshake)?
             .with_dry_run(true)
