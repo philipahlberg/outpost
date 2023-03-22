@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 
 use clap::Parser;
 use outpost::{config::Credentials, worker};
@@ -16,6 +16,9 @@ enum Cli {
 
         #[arg(long)]
         iterations: Option<usize>,
+
+        #[arg(long)]
+        interval: Option<u64>,
     },
 }
 
@@ -27,9 +30,12 @@ fn main() {
             on_update,
             resume,
             iterations,
+            interval,
         } => {
             let credentials = Credentials::from_env().expect("invalid credentials");
-            worker::poll(on_update, resume, iterations, credentials).expect("failed to run `poll`");
+            let interval = Duration::from_secs(interval.unwrap_or(60));
+            worker::poll(on_update, resume, interval, iterations, credentials)
+                .expect("failed to run `poll`");
         }
     }
 

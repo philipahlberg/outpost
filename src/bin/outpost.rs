@@ -44,8 +44,15 @@ fn main() {
                 .display()
                 .to_string();
             let on_update = config.on_update.display().to_string();
-            cli::start(stdout, stderr, on_update, config.iterations, credentials)
-                .expect("`start` failed");
+            cli::start(
+                stdout,
+                stderr,
+                on_update,
+                config.iterations,
+                config.interval,
+                credentials,
+            )
+            .expect("`start` failed");
         }
         Command::Stop {} => {
             cli::stop();

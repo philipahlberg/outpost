@@ -27,6 +27,7 @@ pub fn start(
     stderr: String,
     on_update: String,
     iterations: Option<usize>,
+    interval: Option<u64>,
     credentials: Option<Credentials>,
 ) -> Result<(), StartError> {
     let outpost_dir = home::home_dir()
@@ -71,6 +72,10 @@ pub fn start(
 
         if let Some(n) = iterations {
             command.args(["--iterations", n.to_string().as_str()]);
+        }
+
+        if let Some(interval) = interval {
+            command.args(["--interval", interval.to_string().as_str()]);
         }
 
         if let Some(c) = credentials {

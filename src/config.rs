@@ -11,6 +11,7 @@ pub struct Config {
     pub stderr: Option<PathBuf>,
     pub on_update: PathBuf,
     pub iterations: Option<usize>,
+    pub interval: Option<u64>,
 }
 
 #[derive(Debug)]
@@ -64,6 +65,7 @@ impl Config {
             stderr,
             on_update,
             iterations: self.iterations,
+            interval: self.interval,
         })
     }
 }

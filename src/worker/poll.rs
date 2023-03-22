@@ -44,6 +44,7 @@ impl From<FetchError> for PollError {
 pub fn poll(
     on_update: PathBuf,
     resume: bool,
+    interval: Duration,
     iterations: Option<usize>,
     credentials: Option<Credentials>,
 ) -> Result<(), PollError> {
@@ -125,7 +126,7 @@ pub fn poll(
                 }
             };
             // TODO: should not sleep on the last iteration
-            tokio::time::sleep(Duration::from_secs(5)).await;
+            tokio::time::sleep(interval).await;
         }
 
         Ok(())
