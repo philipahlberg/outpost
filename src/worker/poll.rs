@@ -43,7 +43,6 @@ impl From<FetchError> for PollError {
 
 pub fn poll(
     on_update: PathBuf,
-    resume: bool,
     interval: Duration,
     iterations: Option<usize>,
     credentials: Option<Credentials>,
@@ -111,9 +110,6 @@ pub fn poll(
 
                     let updated_commit_id = repo.current_commit_id()?;
 
-                    if !resume {
-                        break;
-                    }
                     if current_commit_id == updated_commit_id {
                         return Err(PollError::BranchWasNotUpdated);
                     }
