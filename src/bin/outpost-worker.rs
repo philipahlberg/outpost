@@ -13,6 +13,9 @@ enum Cli {
 
         #[arg(long)]
         resume: bool,
+
+        #[arg(long)]
+        iterations: Option<usize>,
     },
 }
 
@@ -20,9 +23,13 @@ fn main() {
     setup_logging();
 
     match Cli::parse() {
-        Cli::Poll { on_update, resume } => {
+        Cli::Poll {
+            on_update,
+            resume,
+            iterations,
+        } => {
             let credentials = Credentials::from_env().expect("invalid credentials");
-            worker::poll(on_update, resume, credentials).expect("failed to run `poll`");
+            worker::poll(on_update, resume, iterations, credentials).expect("failed to run `poll`");
         }
     }
 

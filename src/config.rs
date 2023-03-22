@@ -10,6 +10,7 @@ pub struct Config {
     pub stdout: Option<PathBuf>,
     pub stderr: Option<PathBuf>,
     pub on_update: PathBuf,
+    pub iterations: Option<usize>,
 }
 
 #[derive(Debug)]
@@ -62,6 +63,7 @@ impl Config {
             stdout,
             stderr,
             on_update,
+            iterations: self.iterations,
         })
     }
 }

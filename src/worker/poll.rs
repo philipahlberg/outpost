@@ -44,6 +44,7 @@ impl From<FetchError> for PollError {
 pub fn poll(
     on_update: PathBuf,
     resume: bool,
+    iterations: Option<usize>,
     credentials: Option<Credentials>,
 ) -> Result<(), PollError> {
     let repo = Repository::discover()?;
@@ -66,7 +67,8 @@ pub fn poll(
     let runtime = Runtime::new().unwrap();
     let future = async {
         let mut current_commit_id;
-        for _ in 0..5 {
+        // TODO: use actual `loop` when `iterations` is not set
+        for _ in 1..iterations.unwrap_or(usize::MAX) {
             current_commit_id = repo.current_commit_id()?;
             match fetch_and_compare(
                 &repo,
@@ -122,6 +124,7 @@ pub fn poll(
                     }
                 }
             };
+            // TODO: should not sleep on the last iteration
             tokio::time::sleep(Duration::from_secs(5)).await;
         }
 

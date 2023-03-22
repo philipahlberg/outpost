@@ -26,6 +26,7 @@ pub fn start(
     stdout: String,
     stderr: String,
     on_update: String,
+    iterations: Option<usize>,
     credentials: Option<Credentials>,
 ) -> Result<(), StartError> {
     let outpost_dir = home::home_dir()
@@ -67,6 +68,10 @@ pub fn start(
             .args(["poll", "--on-update", on_update.as_str()])
             .stdout(stdout)
             .stderr(stderr);
+
+        if let Some(n) = iterations {
+            command.args(["--iterations", n.to_string().as_str()]);
+        }
 
         if let Some(c) = credentials {
             command.env("GIT_USERNAME", c.username);
