@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::Parser;
 use outpost::{config::Credentials, worker};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -7,7 +9,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 enum Cli {
     Poll {
         #[arg(long)]
-        on_update: String,
+        on_update: PathBuf,
 
         #[arg(long)]
         resume: bool,
@@ -19,26 +21,8 @@ fn main() {
 
     match Cli::parse() {
         Cli::Poll { on_update, resume } => {
-            let (program, arguments) = match shlex::split(&on_update) {
-                Some(on_update) => {
-                    let mut iter = on_update.into_iter();
-                    let program = iter
-                        .next()
-                        .expect("`--on-update` does not specify a command");
-                    let arguments: Vec<_> = iter.collect();
-                    (program, arguments)
-                }
-                None => {
-                    tracing::error!(
-                        "`{}` is not a valid command (passed to `--on-update`)",
-                        on_update
-                    );
-                    return;
-                }
-            };
             let credentials = Credentials::from_env().expect("invalid credentials");
-
-            worker::poll(program, arguments, resume, credentials).expect("failed to run `poll`");
+            worker::poll(on_update, resume, credentials).expect("failed to run `poll`");
         }
     }
 

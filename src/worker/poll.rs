@@ -6,6 +6,7 @@ use crate::{
 use gix::ObjectId;
 use std::{
     io,
+    path::PathBuf,
     process::{Command, Stdio},
     time::Duration,
 };
@@ -41,8 +42,7 @@ impl From<FetchError> for PollError {
 }
 
 pub fn poll(
-    program: String,
-    arguments: Vec<String>,
+    on_update: PathBuf,
     resume: bool,
     credentials: Option<Credentials>,
 ) -> Result<(), PollError> {
@@ -84,10 +84,9 @@ pub fn poll(
                 } => {
                     tracing::info!("Update found.");
 
-                    tracing::debug!("Running `{}` with arguments {:?}", &program, &arguments);
+                    tracing::debug!("Running `{}`", &on_update.display());
 
-                    let output = Command::new(&program)
-                        .args(&arguments)
+                    let output = Command::new(&on_update)
                         .stdout(Stdio::piped())
                         .stderr(Stdio::piped())
                         .spawn()
@@ -143,19 +142,13 @@ pub fn poll(
             tracing::error!(?error, "Failed to fetch changes from the remote repository");
         }
         Err(PollError::Spawn(error)) => {
-            tracing::error!(
-                ?error,
-                "Failed to spawn the command `{} {:?}`",
-                program,
-                arguments
-            );
+            tracing::error!(?error, "Failed to execute `{}`", on_update.display());
         }
         Err(PollError::Complete(error)) => {
             tracing::error!(
                 ?error,
-                "Failed to complete the command `{} {:?}`",
-                program,
-                arguments
+                "Failed to complete the command `{}`",
+                on_update.display(),
             )
         }
         Err(PollError::NonZeroExit { stdout, stderr }) => {

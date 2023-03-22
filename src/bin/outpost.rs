@@ -43,7 +43,8 @@ fn main() {
                 .unwrap_or(PathBuf::from("/tmp/outpost.err"))
                 .display()
                 .to_string();
-            cli::start(stdout, stderr, config.on_update, credentials).expect("`start` failed");
+            let on_update = config.on_update.display().to_string();
+            cli::start(stdout, stderr, on_update, credentials).expect("`start` failed");
         }
         Command::Stop {} => {
             cli::stop();

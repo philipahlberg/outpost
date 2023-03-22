@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub stdout: Option<PathBuf>,
     pub stderr: Option<PathBuf>,
-    pub on_update: String,
+    pub on_update: PathBuf,
 }
 
 #[derive(Debug)]
@@ -56,11 +56,12 @@ impl Config {
             .stderr
             .map(|path| normalize_path(base, path))
             .transpose()?;
+        let on_update = normalize_path(base, self.on_update)?;
 
         Ok(Self {
             stdout,
             stderr,
-            on_update: self.on_update,
+            on_update,
         })
     }
 }
