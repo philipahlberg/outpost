@@ -4,23 +4,20 @@ use crate::{
     git::{GitError, Repository},
 };
 use gix::ObjectId;
-use std::{
-    io,
-    path::PathBuf,
-    process::{Command, Stdio},
-    time::Duration,
-};
+use std::{fs::File, io, path::PathBuf, process::Command, time::Duration};
+use time::macros::format_description;
 use tokio::runtime::Runtime;
 
 #[derive(Debug)]
 pub enum PollError {
     Git(GitError),
     Fetch(FetchError),
+    Directory(io::Error),
+    File(io::Error),
     Spawn(io::Error),
     Complete(io::Error),
     NonZeroExit {
-        stdout: String,
-        stderr: String,
+        path: String,
     },
     BranchWasNotUpdated,
     UnexpectedCommitId {
@@ -43,6 +40,7 @@ impl From<FetchError> for PollError {
 
 pub fn poll(
     on_update: PathBuf,
+    updates: PathBuf,
     interval: Duration,
     iterations: Option<usize>,
     credentials: Option<Credentials>,
@@ -66,6 +64,10 @@ pub fn poll(
 
     let runtime = Runtime::new().unwrap();
     let future = async {
+        if !updates.exists() {
+            std::fs::create_dir(&updates).map_err(PollError::Directory)?;
+        }
+
         let mut current_commit_id;
         // TODO: use actual `loop` when `iterations` is not set
         for _ in 1..iterations.unwrap_or(usize::MAX) {
@@ -86,25 +88,39 @@ pub fn poll(
                 } => {
                     tracing::info!("Update found.");
 
+                    let format =
+                        format_description!("[year]-[month]-[day]_[hour]-[minute]-[second]");
+                    let name = time::OffsetDateTime::now_utc()
+                        .format(format)
+                        .expect("invalid format");
+
+                    let path = updates.join(name);
+
+                    tracing::debug!("Creating `{}`", path.display());
+
+                    std::fs::create_dir(&path).map_err(PollError::Directory)?;
+                    let stdout = File::create(path.join("stdout")).map_err(PollError::File)?;
+                    let stderr = File::create(path.join("stderr")).map_err(PollError::File)?;
+
                     tracing::debug!("Running `{}`", &on_update.display());
 
                     let output = Command::new(&on_update)
-                        .stdout(Stdio::piped())
-                        .stderr(Stdio::piped())
+                        .stdout(stdout)
+                        .stderr(stderr)
                         .spawn()
                         .map_err(PollError::Spawn)?
                         .wait_with_output()
                         .map_err(PollError::Complete)?;
 
-                    let stdout = String::from_utf8_lossy(output.stdout.as_slice());
-                    let stderr = String::from_utf8_lossy(output.stderr.as_slice());
-
                     if output.status.success() {
-                        tracing::info!(%stdout, %stderr, "Process completed successfully");
+                        let path = path.display();
+                        tracing::info!(
+                            %path,
+                            "Process completed successfully"
+                        );
                     } else {
                         return Err(PollError::NonZeroExit {
-                            stdout: stdout.to_string(),
-                            stderr: stderr.to_string(),
+                            path: path.display().to_string(),
                         });
                     }
 
@@ -138,6 +154,12 @@ pub fn poll(
                 "Error encountered while trying to access local git repository"
             );
         }
+        Err(PollError::Directory(error)) => {
+            tracing::error!(?error, "Failed to create update directory");
+        }
+        Err(PollError::File(error)) => {
+            tracing::error!(?error, "Failed to create update file(s)");
+        }
         Err(PollError::Fetch(error)) => {
             tracing::error!(?error, "Failed to fetch changes from the remote repository");
         }
@@ -151,8 +173,8 @@ pub fn poll(
                 on_update.display(),
             )
         }
-        Err(PollError::NonZeroExit { stdout, stderr }) => {
-            tracing::error!(%stdout, %stderr, "Process exited with a non-zero exit code");
+        Err(PollError::NonZeroExit { path }) => {
+            tracing::error!(%path, "Process exited with a non-zero exit code");
         }
         Err(PollError::BranchWasNotUpdated) => {
             tracing::error!("The current branch has not been updated. Exiting the process.");

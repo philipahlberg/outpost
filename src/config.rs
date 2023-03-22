@@ -10,6 +10,7 @@ pub struct Config {
     pub stdout: Option<PathBuf>,
     pub stderr: Option<PathBuf>,
     pub on_update: PathBuf,
+    pub updates: PathBuf,
     pub iterations: Option<usize>,
     pub interval: Option<u64>,
 }
@@ -59,11 +60,13 @@ impl Config {
             .map(|path| normalize_path(base, path))
             .transpose()?;
         let on_update = normalize_path(base, self.on_update)?;
+        let updates = normalize_path(base, self.updates)?;
 
         Ok(Self {
             stdout,
             stderr,
             on_update,
+            updates,
             iterations: self.iterations,
             interval: self.interval,
         })

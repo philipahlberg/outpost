@@ -26,6 +26,7 @@ pub fn start(
     stdout: String,
     stderr: String,
     on_update: String,
+    updates: String,
     iterations: Option<usize>,
     interval: Option<u64>,
     credentials: Option<Credentials>,
@@ -66,7 +67,13 @@ pub fn start(
         let mut command = Command::new(OUTPOST_WORKER);
 
         command
-            .args(["poll", "--on-update", on_update.as_str()])
+            .args([
+                "poll",
+                "--on-update",
+                on_update.as_str(),
+                "--updates",
+                updates.as_str(),
+            ])
             .stdout(stdout)
             .stderr(stderr);
 

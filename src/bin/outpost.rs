@@ -44,10 +44,12 @@ fn main() {
                 .display()
                 .to_string();
             let on_update = config.on_update.display().to_string();
+            let updates = config.updates.display().to_string();
             cli::start(
                 stdout,
                 stderr,
                 on_update,
+                updates,
                 config.iterations,
                 config.interval,
                 credentials,
